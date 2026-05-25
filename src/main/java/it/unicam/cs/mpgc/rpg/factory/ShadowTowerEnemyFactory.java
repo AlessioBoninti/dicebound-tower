@@ -3,6 +3,7 @@ package it.unicam.cs.mpgc.rpg.factory;
 import it.unicam.cs.mpgc.rpg.model.Enemy;
 
 /**
+ *
  * DP Factory Method:
  * Factory preparata per una possibile Torre delle Ombre (Seconda Torre).
  * Per ora non viene usata nella prima versione del gioco,
