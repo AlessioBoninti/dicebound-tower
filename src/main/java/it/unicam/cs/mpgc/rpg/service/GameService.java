@@ -8,6 +8,7 @@ import it.unicam.cs.mpgc.rpg.model.Enemy;
 import it.unicam.cs.mpgc.rpg.model.GameState;
 import it.unicam.cs.mpgc.rpg.model.Player;
 import it.unicam.cs.mpgc.rpg.model.PlayerClass;
+import it.unicam.cs.mpgc.rpg.persistence.SaveManager;
 import it.unicam.cs.mpgc.rpg.tower.FloorType;
 import it.unicam.cs.mpgc.rpg.tower.TowerManager;
 
@@ -21,15 +22,17 @@ public class GameService {
     private final CombatManager combatManager;
     private final TowerManager towerManager;
     private final EnemyFactory enemyFactory;
+    private final SaveManager saveManager;
     private boolean rewardsGiven;
 
     /**
-     * Prepara i gestori usati durante la partita.
+     * Prepara i manager usati durante la partita.
      */
     public GameService() {
         this.combatManager = new CombatManager();
         this.towerManager = new TowerManager();
         this.enemyFactory = new RuinsEnemyFactory();
+        this.saveManager = new SaveManager();
         this.rewardsGiven = false;
     }
 
@@ -48,6 +51,31 @@ public class GameService {
      */
     public GameState getGameState() {
         return gameState;
+    }
+
+    /**
+     * Salva la partita corrente se presente.
+     */
+    public void saveGame() {
+        if (gameState != null) {
+            saveManager.save(gameState);
+        }
+    }
+
+    /**
+     * Carica la partita salvata e ripristina lo stato del turno.
+     */
+    public void loadGame() {
+        this.gameState = saveManager.load();
+        this.currentEnemy = null;
+        this.rewardsGiven = false;
+    }
+
+    /**
+     * Indica se esiste una partita salvata.
+     */
+    public boolean saveExists() {
+        return saveManager.saveExists();
     }
 
     /**
@@ -146,7 +174,7 @@ public class GameService {
     }
 
     /**
-     * Indica se una partita è gia stata avviata.
+     * Indica se una partita è già stata avviata.
      */
     public boolean hasGameStarted() {
         return gameState != null;

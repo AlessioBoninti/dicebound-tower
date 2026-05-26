@@ -15,6 +15,7 @@ public class Player {
     private int experience;
     private int gold;
     private int currentHp;
+    private Inventory inventory;
 
     /**
      * Costruttore vuoto usato dalla libreria di persistenza JSON
@@ -36,6 +37,8 @@ public class Player {
         this.gold = 0;
         this.stats = createInitialStats(playerClass);
         this.currentHp = getMaxHp();
+        this.inventory = new Inventory();
+        this.inventory.addItem(new Item("Pozione di Cura Minore", ItemType.HEALING_POTION, 20));
     }
 
     /**
@@ -141,5 +144,9 @@ public class Player {
 
     public int getCurrentHp() {
         return currentHp;
+    }
+
+    public Inventory getInventory() {
+        return inventory;
     }
 }
