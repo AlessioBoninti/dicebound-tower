@@ -1,11 +1,14 @@
 package it.unicam.cs.mpgc.rpg.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * Rappresenta il personaggio controllato dal giocatore.
  * Contiene solo informazioni legate al personaggio, come nome,
  * classe, statistiche, livello, esperienza, oro e HP.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Player {
 
     private String name;
@@ -75,6 +78,7 @@ public class Player {
         }
     }
 
+    @JsonIgnore
     public boolean isAlive() {
         return currentHp > 0;
     }
@@ -114,6 +118,7 @@ public class Player {
      * Calcola gli HP massimi usando la formula base del regolamento:
      * 40 + vitalità * 5.
      */
+    @JsonIgnore
     public int getMaxHp() {
         return 40 + stats.getVitality() * 5;
     }
