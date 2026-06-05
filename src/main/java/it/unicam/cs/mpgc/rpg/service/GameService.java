@@ -8,9 +8,12 @@ import it.unicam.cs.mpgc.rpg.model.Enemy;
 import it.unicam.cs.mpgc.rpg.model.GameState;
 import it.unicam.cs.mpgc.rpg.model.Player;
 import it.unicam.cs.mpgc.rpg.model.PlayerClass;
+import it.unicam.cs.mpgc.rpg.persistence.SaveInfo;
 import it.unicam.cs.mpgc.rpg.persistence.SaveManager;
 import it.unicam.cs.mpgc.rpg.tower.FloorType;
 import it.unicam.cs.mpgc.rpg.tower.TowerManager;
+
+import java.util.List;
 
 /**
  * Coordina lo stato principale della partita e le operazioni di gioco.
@@ -69,6 +72,29 @@ public class GameService {
         this.gameState = saveManager.load();
         this.currentEnemy = null;
         this.rewardsGiven = false;
+    }
+
+    /**
+     * Carica la partita indicata e ripristina lo stato del turno.
+     */
+    public void loadGame(String fileName) {
+        this.gameState = saveManager.load(fileName);
+        this.currentEnemy = null;
+        this.rewardsGiven = false;
+    }
+
+    /**
+     * Restituisce le partite salvate disponibili.
+     */
+    public List<SaveInfo> getAvailableSaves() {
+        return saveManager.listSaves();
+    }
+
+    /**
+     * Elimina la partita salvata indicata.
+     */
+    public void deleteSave(String fileName) {
+        saveManager.deleteSave(fileName);
     }
 
     /**
