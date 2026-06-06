@@ -57,6 +57,48 @@ public class GameService {
     }
 
     /**
+     * Restituisce il giocatore corrente, se presente.
+     */
+    public Player getPlayer() {
+        if (gameState == null) {
+            return null;
+        }
+        return gameState.getPlayer();
+    }
+
+    /**
+     * Restituisce il piano corrente della partita.
+     */
+    public int getCurrentFloor() {
+        if (gameState == null) {
+            return 0;
+        }
+        return gameState.getCurrentFloor();
+    }
+
+    /**
+     * Usa una pozione di cura sul giocatore corrente.
+     */
+    public boolean useHealingPotion() {
+        if (gameState == null) {
+            return false;
+        }
+
+        Player player = gameState.getPlayer();
+        return player.getInventory().useHealingPotion(player);
+    }
+
+    /**
+     * Restituisce il numero di oggetti nell'inventario corrente.
+     */
+    public int getInventorySize() {
+        if (gameState == null) {
+            return 0;
+        }
+        return gameState.getPlayer().getInventory().getItems().size();
+    }
+
+    /**
      * Salva la partita corrente se presente.
      */
     public void saveGame() {
@@ -160,22 +202,29 @@ public class GameService {
     }
 
     /**
-     * Restituisce il risultato del combattimento e assegna le ricompense una sola volta.
+     * Restituisce il risultato del combattimento.
      */
     public CombatResult getCombatResult() {
         if (currentEnemy == null) {
             return CombatResult.IN_PROGRESS;
         }
 
-        Player player = gameState.getPlayer();
-        CombatResult result = combatManager.getCombatResult(player, currentEnemy);
+        return combatManager.getCombatResult(getPlayer(), currentEnemy);
+    }
 
-        if (result == CombatResult.PLAYER_WON && !rewardsGiven) {
-            combatManager.giveRewards(player, currentEnemy);
-            rewardsGiven = true;
+    /**
+     * Assegna le ricompense del combattimento se non sono gia' state date.
+     */
+    public void giveRewardsIfNeeded() {
+        if (currentEnemy == null) {
+            return;
         }
 
-        return result;
+        CombatResult result = getCombatResult();
+        if (result == CombatResult.PLAYER_WON && !rewardsGiven) {
+            combatManager.giveRewards(getPlayer(), currentEnemy);
+            rewardsGiven = true;
+        }
     }
 
     /**

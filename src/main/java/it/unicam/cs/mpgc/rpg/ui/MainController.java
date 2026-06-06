@@ -211,7 +211,7 @@ public class MainController {
     private void showTowerSelection() {
         Label title = createTitle("Selezione torre");
 
-        Player player = gameService.getGameState().getPlayer();
+        Player player = gameService.getPlayer();
         Label playerInfo = new Label(
                 "Nome: " + player.getName()
                         + " | Classe: " + player.getPlayerClass()
@@ -260,7 +260,7 @@ public class MainController {
     private void showExploration() {
         Label title = createTitle("Torre delle Rovine");
 
-        Player player = gameService.getGameState().getPlayer();
+        Player player = gameService.getPlayer();
         Label playerInfo = new Label(
                 "Nome: " + player.getName()
                         + " | Classe: " + player.getPlayerClass()
@@ -273,7 +273,7 @@ public class MainController {
         playerInfo.setStyle("-fx-text-fill: #d9e2ec; -fx-font-size: 15;");
 
         Label floorLabel = new Label(
-                "Piano corrente: " + gameService.getGameState().getCurrentFloor()
+                "Piano corrente: " + gameService.getCurrentFloor()
                         + " (" + gameService.getCurrentFloorType() + ")"
         );
         floorLabel.setStyle("-fx-text-fill: #d9e2ec; -fx-font-size: 15;");
@@ -321,8 +321,7 @@ public class MainController {
 
         potionButton.setOnAction(event -> {
             if (gameService.hasGameStarted()) {
-                Player currentPlayer = gameService.getGameState().getPlayer();
-                boolean potionUsed = currentPlayer.getInventory().useHealingPotion(currentPlayer);
+                boolean potionUsed = gameService.useHealingPotion();
                 if (potionUsed) {
                     appendLog("Pozione usata.");
                 } else {
@@ -363,7 +362,7 @@ public class MainController {
     private void showCombat() {
         Label title = createTitle("Combattimento");
 
-        Player player = gameService.getGameState().getPlayer();
+        Player player = gameService.getPlayer();
         Enemy enemy = gameService.getCurrentEnemy();
         CombatResult combatResult = enemy == null ? CombatResult.IN_PROGRESS : gameService.getCombatResult();
 
@@ -436,6 +435,7 @@ public class MainController {
             }
 
             if (result == CombatResult.PLAYER_WON) {
+                gameService.giveRewardsIfNeeded();
                 appendLog("Nemico sconfitto.");
             } else if (result == CombatResult.PLAYER_LOST) {
                 appendLog("Sei stato sconfitto.");
@@ -445,8 +445,7 @@ public class MainController {
         });
 
         potionButton.setOnAction(event -> {
-            Player currentPlayer = gameService.getGameState().getPlayer();
-            boolean potionUsed = currentPlayer.getInventory().useHealingPotion(currentPlayer);
+            boolean potionUsed = gameService.useHealingPotion();
             if (potionUsed) {
                 appendLog("Pozione usata.");
             } else {
