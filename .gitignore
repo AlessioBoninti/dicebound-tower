@@ -22,3 +22,6 @@ Thumbs.db
 # Salvataggio
 savegame.json
 saves/
+
+# Draft locale Wiki
+wiki-draft/

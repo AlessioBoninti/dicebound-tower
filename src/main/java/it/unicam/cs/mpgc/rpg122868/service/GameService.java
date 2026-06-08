@@ -1,0 +1,266 @@
+package it.unicam.cs.mpgc.rpg122868.service;
+
+import it.unicam.cs.mpgc.rpg122868.combat.CombatManager;
+import it.unicam.cs.mpgc.rpg122868.combat.CombatResult;
+import it.unicam.cs.mpgc.rpg122868.factory.EnemyFactory;
+import it.unicam.cs.mpgc.rpg122868.factory.RuinsEnemyFactory;
+import it.unicam.cs.mpgc.rpg122868.model.Enemy;
+import it.unicam.cs.mpgc.rpg122868.model.GameState;
+import it.unicam.cs.mpgc.rpg122868.model.Player;
+import it.unicam.cs.mpgc.rpg122868.model.PlayerClass;
+import it.unicam.cs.mpgc.rpg122868.persistence.GameRepository;
+import it.unicam.cs.mpgc.rpg122868.persistence.SaveInfo;
+import it.unicam.cs.mpgc.rpg122868.persistence.SaveManager;
+import it.unicam.cs.mpgc.rpg122868.tower.FloorType;
+import it.unicam.cs.mpgc.rpg122868.tower.TowerManager;
+
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Coordina lo stato principale della partita e le operazioni di gioco.
+ */
+public class GameService {
+
+    private GameState gameState;
+    private Enemy currentEnemy;
+    private final CombatManager combatManager;
+    private final TowerManager towerManager;
+    private final EnemyFactory enemyFactory;
+    private final GameRepository gameRepository;
+    private boolean rewardsGiven;
+
+    /**
+     * Prepara i manager usati durante la partita.
+     */
+    public GameService() {
+        this(new SaveManager());
+    }
+
+    /**
+     * Prepara il servizio usando il repository indicato per la persistenza.
+     */
+    public GameService(GameRepository gameRepository) {
+        this.combatManager = new CombatManager();
+        this.towerManager = new TowerManager();
+        this.enemyFactory = new RuinsEnemyFactory();
+        this.gameRepository = Objects.requireNonNull(gameRepository);
+        this.rewardsGiven = false;
+    }
+
+    /**
+     * Avvia una nuova partita con il giocatore indicato.
+     */
+    public void startNewGame(String playerName, PlayerClass playerClass) {
+        Player player = new Player(playerName, playerClass);
+        this.gameState = new GameState(player);
+        this.currentEnemy = null;
+        this.rewardsGiven = false;
+    }
+
+    /**
+     * Restituisce lo stato corrente della partita.
+     */
+    public GameState getGameState() {
+        return gameState;
+    }
+
+    /**
+     * Restituisce il giocatore corrente, se presente.
+     */
+    public Player getPlayer() {
+        if (gameState == null) {
+            return null;
+        }
+        return gameState.getPlayer();
+    }
+
+    /**
+     * Restituisce il piano corrente della partita.
+     */
+    public int getCurrentFloor() {
+        if (gameState == null) {
+            return 0;
+        }
+        return gameState.getCurrentFloor();
+    }
+
+    /**
+     * Usa una pozione di cura sul giocatore corrente.
+     */
+    public boolean useHealingPotion() {
+        if (gameState == null) {
+            return false;
+        }
+
+        Player player = gameState.getPlayer();
+        return player.getInventory().useHealingPotion(player);
+    }
+
+    /**
+     * Restituisce il numero di oggetti nell'inventario corrente.
+     */
+    public int getInventorySize() {
+        if (gameState == null) {
+            return 0;
+        }
+        return gameState.getPlayer().getInventory().getItems().size();
+    }
+
+    /**
+     * Salva la partita corrente se presente.
+     */
+    public void saveGame() {
+        if (gameState != null) {
+            gameRepository.save(gameState);
+        }
+    }
+
+    /**
+     * Carica la partita salvata e ripristina lo stato del turno.
+     */
+    public void loadGame() {
+        this.gameState = gameRepository.load();
+        this.currentEnemy = null;
+        this.rewardsGiven = false;
+    }
+
+    /**
+     * Carica la partita indicata e ripristina lo stato del turno.
+     */
+    public void loadGame(String fileName) {
+        this.gameState = gameRepository.load(fileName);
+        this.currentEnemy = null;
+        this.rewardsGiven = false;
+    }
+
+    /**
+     * Restituisce le partite salvate disponibili.
+     */
+    public List<SaveInfo> getAvailableSaves() {
+        return gameRepository.listSaves();
+    }
+
+    /**
+     * Elimina la partita salvata indicata.
+     */
+    public void deleteSave(String fileName) {
+        gameRepository.deleteSave(fileName);
+    }
+
+    /**
+     * Indica se esiste una partita salvata.
+     */
+    public boolean saveExists() {
+        return gameRepository.saveExists();
+    }
+
+    /**
+     * Restituisce il nemico attualmente in combattimento.
+     */
+    public Enemy getCurrentEnemy() {
+        return currentEnemy;
+    }
+
+    /**
+     * Restituisce il tipo del piano corrente.
+     */
+    public FloorType getCurrentFloorType() {
+        return towerManager.getFloorType(gameState);
+    }
+
+    /**
+     * Prepara il nemico previsto dal piano corrente.
+     */
+    public Enemy prepareEnemyForCurrentFloor() {
+        FloorType floorType = getCurrentFloorType();
+
+        if (floorType == FloorType.BASIC_ENEMY) {
+            currentEnemy = enemyFactory.createRandomBasicEnemy();
+        } else if (floorType == FloorType.BOSS) {
+            currentEnemy = enemyFactory.createBoss();
+        } else {
+            currentEnemy = null;
+        }
+
+        rewardsGiven = false;
+        return currentEnemy;
+    }
+
+    /**
+     * Esegue l'attacco del giocatore se il combattimento è ancora attivo.
+     */
+    public void playerAttack() {
+        Player player = gameState.getPlayer();
+
+        if (currentEnemy != null
+                && combatManager.getCombatResult(player, currentEnemy) == CombatResult.IN_PROGRESS) {
+            combatManager.playerAttack(player, currentEnemy);
+        }
+    }
+
+    /**
+     * Esegue l'attacco del nemico se entrambi i combattenti sono vivi.
+     */
+    public void enemyAttack() {
+        Player player = gameState.getPlayer();
+
+        if (currentEnemy != null && currentEnemy.isAlive() && player.isAlive()) {
+            combatManager.enemyAttack(player, currentEnemy);
+        }
+    }
+
+    /**
+     * Restituisce il risultato del combattimento.
+     */
+    public CombatResult getCombatResult() {
+        if (currentEnemy == null) {
+            return CombatResult.IN_PROGRESS;
+        }
+
+        return combatManager.getCombatResult(getPlayer(), currentEnemy);
+    }
+
+    /**
+     * Assegna le ricompense del combattimento se non sono gia' state date.
+     */
+    public void giveRewardsIfNeeded() {
+        if (currentEnemy == null) {
+            return;
+        }
+
+        CombatResult result = getCombatResult();
+        if (result == CombatResult.PLAYER_WON && !rewardsGiven) {
+            combatManager.giveRewards(getPlayer(), currentEnemy);
+            rewardsGiven = true;
+        }
+    }
+
+    /**
+     * Completa il piano corrente e prepara il servizio al piano successivo.
+     */
+    public void completeCurrentFloor() {
+        if (getCurrentFloorType() == FloorType.CHECKPOINT) {
+            towerManager.applyCheckpoint(gameState);
+        } else {
+            towerManager.advanceFloor(gameState);
+        }
+
+        currentEnemy = null;
+        rewardsGiven = false;
+    }
+
+    /**
+     * Indica se la torre è stata completata.
+     */
+    public boolean isTowerCompleted() {
+        return towerManager.isTowerCompleted(gameState);
+    }
+
+    /**
+     * Indica se una partita è già stata avviata.
+     */
+    public boolean hasGameStarted() {
+        return gameState != null;
+    }
+}
